@@ -1,0 +1,6 @@
+sudo python nuppi_setup.py --src=B1937+21 --ra=19:39:38.561224 --dec=+21:34:59.12570 --scannum=228502 --freq=1436 -t 1 --datadir /data2/ --parfile=/ephem/B1937+21.par --bw=128 --nchan=8
+
+
+
+make && sudo ./nuppi_read_raw -D -f /data2/nuppi_57928_1937+21_228502_1428.0000.raw
+
