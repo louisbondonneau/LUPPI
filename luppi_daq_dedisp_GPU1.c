@@ -38,9 +38,10 @@ void usage() {
             "Options:\n"
             "  -h, --help        This message\n"
             "  -n, --null        No disk output\n"
-	    "  -D, --ds          Downsample instead of fold\n"
-	    "  -t, --test        Test mode without ssh upload\n"
-	    "  -g, --gpu         GPUid (default 0)\n"
+        "  -D, --ds              Downsample instead of fold\n"
+        "  -t, --test            Test mode without ssh upload\n"
+        "  -f, --fasttransfer    transfer the observation using a mix of scp and rsync for max speed\n"
+        "  -g, --gpu             GPUid (default 0)\n"
            );
 }
 
@@ -51,19 +52,24 @@ void *dedisp_ds_thread(void *args);
 void *psrfits_thread(void *args);
 void *null_thread(void *args);
 
+char datadir[256];
+char basename[256];
+char script[128], script_fast[128], script_slow[128];
+
 int main(int argc, char *argv[]) {
 
     static struct option long_opts[] = {
         {"help",   0, NULL, 'h'},
         {"null",   0, NULL, 'n'},
-	{"ds",     0, NULL, 'D'},
-	{"gpu",     0, NULL, 'g'},
+    {"ds",     0, NULL, 'D'},
+    {"gpu",     0, NULL, 'g'},
         {0,0,0,0}
     };
     int use_null_thread = 0;
     int ds = 0;
     int gpu = 0;
     int upload = 1;
+    int upload_fast = 0;
     int opt, opti;
 
 
@@ -75,7 +81,7 @@ int main(int argc, char *argv[]) {
     }
 
 
-    while ((opt=getopt_long(argc,argv,"htnDg",long_opts,&opti))!=-1) {
+    while ((opt=getopt_long(argc,argv,"htfnDg",long_opts,&opti))!=-1) {
         switch (opt) {
             case 'n':
                 use_null_thread = 1;
@@ -85,6 +91,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 't':
                 upload = 0;
+                break;
+            case 'f':
+                upload_fast = 1;
                 break;
             case 'g':
                 break;
@@ -97,6 +106,7 @@ int main(int argc, char *argv[]) {
     }
 
     printf("upload = %d\n",upload);
+    printf("upload_fast = %d\n",upload_fast);
     printf("BEAM = %d\n",gpu);
     printf("gpu = %d\n",gpu%2 );
     // -- Ids --
@@ -139,11 +149,10 @@ int main(int argc, char *argv[]) {
     rv = pthread_mutex_init(&lock_psrfits_tpl, NULL);
     if (rv != 0) {
         log_error("nuppi_daq_dedisp10", "Mutex initialization failed");
-	exit(1);
+    exit(1);
     }
 
-    // -- Read status shm, init RUN and read filename --
-    char basename[256];
+    
     char psrname[256];
     char projid[256];
     char julianday[256];
@@ -158,6 +167,147 @@ int main(int argc, char *argv[]) {
     strncpy(day, julianday+7, 9);
     printf("%.4s/%.2s/%.2s  %.4s\n", year, month, day, projid);
 
+    // -- preparing upload scripts -
+
+    char string[1024], filename[128], hostname[128], strlog[128], logname[128], logdir[128];
+    char source[256], mode[256] , path[256], commande[2048], date[128];
+
+    hgets(stat.buf, "SRC_NAME", 256, source);
+    hgets(stat.buf, "OBS_MODE", 256, mode);
+    hgets(stat.buf, "DATADIR", 256, datadir);
+    gethostname(hostname, 127);
+    sprintf(logdir, "%s/BEAM%d_%d", datadir, gpu, (int)getpid());
+    sprintf(filename, "%s/%s-%s.log", logdir, basename, hostname);
+    sprintf(logname,"%s_%d.log", LOG_FILENAME, (int)getpid());
+
+    sprintf(script,"%s/SCRIPTS/%s_script.sh", datadir, basename);
+    sprintf(script_fast,"%s/SCRIPTS/%s_script_fast.sh", datadir, basename);
+    sprintf(script_slow,"%s/SCRIPTS/%s_script_slow.sh", datadir, basename);
+    printf("%.4s/%.2s/%.2s  %.4s\n", year, month, day, projid);
+    FILE *pfo_slow;
+    FILE *pfo_fast;
+    if((pfo_slow=fopen(script_slow,"w"))!=NULL) {
+    if((pfo_fast=fopen(script_fast,"w"))!=NULL) {
+        //######## mkdir DATA/SOURCE
+        //sprintf(string,"mkdir %s/DATA/%s 2>&1\n",datadir,source); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        //sprintf(string,"if [ \"$1\" !=  \"\" ] && [ \"$1\" !=  \"rsync\" ]; then echo 'error: '$1' is not a valide option (rsync or empty is valide)' ; exit; fi\n"); fputs(string,pfo_fast);
+        sprintf(string,"ssh nfrplsobs@databfnfrdt 'mkdir /data/nenufar-pulsar/DATA/%s' 2>&1\n",source); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(strlog, "script_mkdir directory %s/DATA/%s on data", datadir,source);
+        log_info("nuppi_daq_dedisp", strlog);
+        //######## mkdir DATA/SOURCE/MODE
+        //sprintf(string,"mkdir %s/DATA/%s/%s 2>&1\n",datadir,source, mode); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(string,"ssh nfrplsobs@databfnfrdt 'mkdir /data/nenufar-pulsar/DATA/%s/%s' 2>&1\n",source, mode); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(strlog, "script_mkdir directory %s/DATA/%s/%s on data", datadir,source, mode);
+        log_info("nuppi_daq_dedisp", strlog);
+        //######## mkdir projid
+        sprintf(path, "%s/%.4s", datadir, projid);
+        sprintf(string,"mkdir %s 2>&1\n",path); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(string,"chmod a+rw %s\n",path); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(strlog, "script_mkdir directory %s on %s", path, hostname);
+        log_info("nuppi_daq_dedisp", strlog);
+        //######## mkdir projid/year
+        sprintf(path, "%s/%.4s/%.4s", datadir, projid, year);
+        sprintf(string,"mkdir %s 2>&1\n",path); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(string,"chmod a+rw %s\n",path); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(string,"ssh nfrplsobs@databfnfrdt 'mkdir /data/nenufar-pulsar/%.4s/%.4s' 2>&1\n",projid, year); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(strlog, "script_mkdir directory %s on %s and data", path, hostname);
+        log_info("nuppi_daq_dedisp", strlog);
+        //######## mkdir projid/year/month
+        sprintf(path, "%s/%.4s/%.4s/%.2s", datadir, projid, year, month);
+        sprintf(string,"mkdir %s 2>&1\n",path); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(string,"chmod a+rw %s\n",path); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(string,"ssh nfrplsobs@databfnfrdt 'mkdir /data/nenufar-pulsar/%.4s/%.4s/%.2s' 2>&1\n",projid, year, month); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(strlog, "script_mkdir directory %s on %s and data", path, hostname);
+        log_info("nuppi_daq_dedisp", strlog);
+        //######## mkdir log_dir
+        sprintf(string,"mkdir %s 2>&1\n",logdir); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(strlog, "script_mkdir directory %s on %s", logdir, hostname);
+        log_info("nuppi_daq_dedisp", strlog);
+        //######## renamed log_file
+        sprintf(string,"mv %s %s 2>&1\n",logname, filename); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(strlog, "script_mv logfile on %s", hostname);
+        log_info("nuppi_daq_dedisp", strlog);
+
+        printf("%s \n", psrname);fflush(stdout);
+        char *obs_time = strtok(psrname, "_");
+        obs_time = strtok(NULL, "_D");
+        obs_time = strtok(obs_time, "T");
+        printf("%s \n", obs_time);fflush(stdout);
+        printf("%s \n", basename);fflush(stdout);
+
+
+        //######## preparing tar_file
+        sprintf(path, "%s/%.4s/%.4s/%.2s", datadir, projid, year, month);
+        sprintf(string, "mv %s/%s*.fits %s/ 2>&1\n", datadir, basename, path); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(string, "cp -p %s/PSETUP-at-%s*.log %s/ 2>&1\n", datadir, obs_time, logdir); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(string, "cp -p %s/PARSET-at-%s*.parset %s/ 2>&1\n", datadir, obs_time, logdir); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(string, "mv %s/SHELL--at-%s*BEAM%d.log %s/ 2>&1\n", datadir, obs_time, gpu, logdir); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(string, "tar -zcvf %s-%s.tar -C %s BEAM%d_%d/ 2>&1\n", basename, hostname, datadir, gpu, (int)getpid()); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(string, "mv %s-%s.tar %s/ 2>&1\n", basename, hostname, path); fputs(string,pfo_slow); fputs(string,pfo_fast);
+
+
+        //######## upload files on databf2
+        sprintf(date, "date \'+%%Y-%%m-%%d %%H:%%M:%%S\'");
+
+        sprintf(string, "echo \"$(%s) $USER %s Start\" >> /data/upload_file.log\n", date, script_slow); fputs(string,pfo_slow);
+        sprintf(string, "echo \"$(%s) $USER %s Start\" >> /data/upload_file.log\n", date, script_fast); fputs(string,pfo_fast);
+        sprintf(string, "rsync -avt --chmod=o+r,o-wx --remove-source-files --bwlimit=50000 -e \"ssh -T -c aes128-ctr -o Compression=no\"  %s/%s*  nfrplsobs@databfnfrdt:/data/nenufar-pulsar/%.4s/%.4s/%.2s/\n", path, basename, projid, year, month); fputs(string,pfo_slow);
+        sprintf(string, "scp -p -o Compression=no -c aes128-ctr %s/%s*  nfrplsobs@databfnfrdt:/data/nenufar-pulsar/%.4s/%.4s/%.2s/\n", path, basename, projid, year, month); fputs(string,pfo_fast);
+        sprintf(string, "rsync -avt --chmod=o+r,o-wx --remove-source-files -e \"ssh -T -c aes128-ctr -o Compression=no\"  %s/%s*  nfrplsobs@databfnfrdt:/data/nenufar-pulsar/%.4s/%.4s/%.2s/\n", path, basename, projid, year, month); fputs(string,pfo_fast);
+        sprintf(string, "echo \"$(%s) $USER %s Stop\" >> /data/upload_file.log\n", date, script_slow); fputs(string,pfo_slow);
+        sprintf(string, "echo \"$(%s) $USER %s Stop\" >> /data/upload_file.log\n", date, script_fast); fputs(string,pfo_fast);
+        //######## creating link on databf2 in /databf2/nenufar-pulsar/DATA/
+        sprintf(string, "ssh nfrplsobs@databfnfrdt 'ln /data/nenufar-pulsar/%.4s/%.4s/%.2s/%s* /data/nenufar-pulsar/DATA/%s/%s/' 2>&1\n", projid, year, month, basename, source, mode); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        //######## cleaning log files and dir
+        sprintf(string, "rm -r %s 2>&1\n", logdir); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(string, "mv `ls %s/PARSET-at-*.parset | grep -v %s` %s/OLD_parset/ 2>&1\n", datadir, obs_time, datadir); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(string, "mv `ls %s/PSETUP-at-*.log | grep -v %s` %s/OLD_LOG/ 2>&1\n", datadir, obs_time, datadir); fputs(string,pfo_slow); fputs(string,pfo_fast);
+        sprintf(string, "mv `ls %s/SHELL--at-*.log | grep -v %s` %s/OLD_LOG/ 2>&1\n", datadir, obs_time, datadir); fputs(string,pfo_slow); fputs(string,pfo_fast);
+
+    }}
+    fclose(pfo_slow);
+    fclose(pfo_fast);
+    FILE *pfo;
+    if((pfo=fopen(script,"w"))!=NULL) {
+        //######## argu fast and slow -> Default is slow
+        sprintf(string,"if [ \"$1\" !=  \"\" ] && [ \"$1\" !=  \"fast\" ] && [ \"$1\" !=  \"slow\" ]; then echo \"error: $1 is not a valide option (fast, slow or empty are valide. Default is slow)\" ; exit; fi; if [ \"$1\" ==  \"fast\" ]; then\n"); fputs(string,pfo);
+
+        //######## Fast script
+        pfo_fast=fopen(script_fast,"rt");
+        while( ! feof( pfo_fast ) ) {
+            fgets(string, 1024, pfo_fast);
+            fputs("    ", pfo);
+            fputs(string, pfo);
+        }
+        fclose(pfo_fast);
+
+        sprintf(string,"else\n"); fputs(string,pfo);
+
+        //######## Slow script
+        pfo_slow=fopen(script_slow,"rt");
+        while( ! feof( pfo_slow ) ) {
+            fgets(string, 1024, pfo_slow);
+            fputs("    ", pfo);
+            fputs(string, pfo);
+        }
+        fclose(pfo_slow);
+        sprintf(string,"fi\n"); fputs(string,pfo);
+    }
+    fclose(pfo);
+
+
+    sprintf(commande, "sudo chmod a+rw %s", script);
+    printf("%s \n", commande);fflush(stdout);
+    system(commande);
+    sprintf(commande, "sudo chmod a+rw %s", script_slow);
+    printf("%s \n", commande);fflush(stdout);
+    system(commande);
+    sprintf(commande, "sudo chmod a+rw %s", script_fast);
+    printf("%s \n", commande);fflush(stdout);
+    system(commande);
+
+
+    // -- Read status shm, init RUN and read filename -
     int port;
     get_int(stat.buf,"DATAPORT", &port, 1491);
     printf("\ndataport = %d\n", port );
@@ -230,12 +380,12 @@ int main(int argc, char *argv[]) {
     /* Alt loop, wait for run=0 */
     while (run) {
         sleep(1); 
-	// Read the RUN keyword in the first status shm, to look for a stop order
-	status_lock_safe(&stat);
-	hgeti4(stat.buf, "RUN", &run);
-	status_unlock_safe(&stat);
+    // Read the RUN keyword in the first status shm, to look for a stop order
+    status_lock_safe(&stat);
+    hgeti4(stat.buf, "RUN", &run);
+    status_unlock_safe(&stat);
 
-	if (run == 0) log_info("nuppi_daq_dedisp1", "Caught RUN = 0 signal for end of observation");
+    if (run == 0) log_info("nuppi_daq_dedisp1", "Caught RUN = 0 signal for end of observation");
 
         if (disk_args.finished) run=0;
     }
@@ -262,161 +412,34 @@ int main(int argc, char *argv[]) {
 
     pthread_mutex_destroy(&lock_psrfits_tpl);
 
-    char filename[128], hostname[128], strlog[128], logname[128], logdir[128];
-
-    char source[256], mode[256], datadir[256], path[256], commande[2048];
-    hgets(stat.buf, "SRC_NAME", 256, source);
-    hgets(stat.buf, "OBS_MODE", 256, mode);
+    char datadir[256], commande[2048];
     hgets(stat.buf, "DATADIR", 256, datadir);
 
-    gethostname(hostname, 127);
-    sprintf(logdir, "%s/BEAM%d_%d", datadir, gpu, (int)getpid());
-    //sprintf(filename, "/data/data2/%s-%s.log", basename, hostname);
-    sprintf(filename, "%s/%s-%s.log", logdir, basename, hostname);
-    sprintf(logname,"%s_%d.log", LOG_FILENAME, (int)getpid());
-
-
-    printf("%.4s/%.2s/%.2s  %.4s\n", year, month, day, projid);
-
-
-    //############SRC/MODE DIR###############
-
-    sprintf(path, "%s/DATA/%s", datadir,source);
-    opendir(path);
-    switch (errno) {
-        case ENOENT:
-	    sprintf(commande, "mkdir %s 2>&1", path);
-            system(commande);
-            sprintf(commande, "ssh nfrplsobs@databf2dt 'mkdir /databf2/nenufar-pulsar/DATA/%s' 2>&1", source);
-            system(commande);
-	    sprintf(strlog, "mkdir directory %s", path);
-	    log_info("nuppi_daq_dedisp", strlog);
-    }
-    
-    
-    sprintf(path, "%s/DATA/%s/%s", datadir, source, mode);
-    opendir(path);
-    switch (errno) {
-        case ENOENT:
-	    sprintf(commande, "mkdir %s 2>&1", path);
-            system(commande);
-            sprintf(commande, "ssh nfrplsobs@databf2dt 'mkdir /databf2/nenufar-pulsar/DATA/%s/%s' 2>&1", source, mode);
-            system(commande);
-	    sprintf(strlog, "mkdir directory %s", path);
-	    log_info("nuppi_daq_dedisp", strlog);
-    }
-
-
-
-    //############projid/year/month DIR###############
-
-    sprintf(path, "%s/%.4s", datadir, projid);
-    opendir(path);
-    switch (errno) {
-        case ENOENT:
-        sprintf(commande, "mkdir %s 2>&1", path);
-            system(commande);
-        sprintf(strlog, "mkdir directory %s", path);
-        log_info("nuppi_daq_dedisp", strlog);
-    }
-    
-
-    sprintf(path, "%s/%.4s/%.4s", datadir, projid, year);
-    opendir(path);
-    switch (errno) {
-        case ENOENT:
-        sprintf(commande, "mkdir %s 2>&1", path);
-        system(commande);
-        sprintf(commande, "ssh nfrplsobs@databf2dt 'mkdir /databf2/nenufar-pulsar/%.4s/%.4s' 2>&1", projid, year);
-        system(commande);
-        sprintf(strlog, "mkdir directory %s", path);
-        log_info("nuppi_daq_dedisp", strlog);
-    }
-
-    sprintf(path, "%s/%.4s/%.4s/%.2s", datadir, projid, year, month);
-    opendir(path);
-    switch (errno) {
-        case ENOENT:
-        sprintf(commande, "mkdir %s 2>&1", path);
-        system(commande);
-        sprintf(commande, "ssh nfrplsobs@databf2dt 'mkdir /databf2/nenufar-pulsar/%.4s/%.4s/%.2s' 2>&1", projid, year, month);
-        system(commande);
-        sprintf(strlog, "mkdir directory %s", path);
-        log_info("nuppi_daq_dedisp", strlog);
-    }
-    
-
-    
-    //############log DIR###############
-
-    sprintf(commande, "sudo mkdir %s 2>&1", logdir);
-    system(commande);
-    sprintf(strlog, "Moving log file to %s", filename);
-    log_info("nuppi_daq_dedisp8", strlog);
-    if (rename(logname, filename)!=0) {
-        sprintf(strlog, "Error moving log file to %s: %s", filename, strerror(errno));
-	log_error("nuppi_daq_dedisp", strlog);
-    }
-    
-
-    printf("%s \n", psrname);fflush(stdout);
-	char *obs_time = strtok(psrname, "_");
-	obs_time = strtok(NULL, "_D");
-	obs_time = strtok(obs_time, "T");
-    printf("%s \n", obs_time);fflush(stdout);
-    printf("%s \n", basename);fflush(stdout);
-	
-
-    sprintf(commande, "sudo mv %s/%s*.fits %s/ 2>&1", datadir, basename, path);
+    sprintf(commande, "sudo chmod a+rw %s/%s*.fits", datadir, basename);
     printf("%s \n", commande);fflush(stdout);
     system(commande);
-	
-    sprintf(commande, "sudo cp %s/PSETUP-at-%s*.log %s/ 2>&1", datadir, obs_time, logdir);
+    sprintf(commande, "sudo chmod a+rw %s/PSETUP-at-*.log", datadir);
     printf("%s \n", commande);fflush(stdout);
     system(commande);
-
-    sprintf(commande, "sudo cp %s/PARSET-at-%s*.parset %s/ 2>&1", datadir, obs_time, logdir);
+    sprintf(commande, "sudo chmod a+rw %s/PARSET-at-*.parset", datadir);
     printf("%s \n", commande);fflush(stdout);
     system(commande);
-
-    sprintf(commande, "sudo mv %s/SHELL--at-%s*BEAM%d.log %s/ 2>&1", datadir, obs_time, gpu, logdir);
+    sprintf(commande, "sudo chmod a+rw %s/SHELL--at-*BEAM%d.log", datadir, gpu);
     printf("%s \n", commande);fflush(stdout);
     system(commande);
-
-    sprintf(commande, "sudo tar -zcvf %s-%s.tar -C %s BEAM%d_%d/ 2>&1", basename, hostname, datadir, gpu, (int)getpid());
-    //sprintf(commande, "sudo tar -zcvf %s-%s.tar %s/ 2>&1", basename, hostname, logdir);
-    printf("%s \n", commande);fflush(stdout);
-    system(commande);
-
-    sprintf(commande, "sudo mv %s-%s.tar %s/ 2>&1", basename, hostname, path);
-    printf("%s \n", commande);fflush(stdout);
-    system(commande);
-
 
     if (upload) {
-    //sprintf(commande, "rsync -av --remove-source-files -e \"ssh \"  %s/%s*  nfrplsobs@databf2dt:/databf2/nenufar-pulsar/DATA/%s/%s/ 2>&1", path, basename, source, mode);
-    sprintf(commande, "rsync -avt --remove-source-files --bwlimit=50000 -e \"ssh \"  %s/%s*  nfrplsobs@databf2dt:/databf2/nenufar-pulsar/%.4s/%.4s/%.2s/ 2>&1", path, basename, projid, year, month);
-    printf("%s \n", commande);fflush(stdout);
-    system(commande);
-
-    sprintf(commande, "ssh nfrplsobs@databf2dt 'ln /databf2/nenufar-pulsar/%.4s/%.4s/%.2s/%s* /databf2/nenufar-pulsar/DATA/%s/%s/' 2>&1", projid, year, month, basename, source, mode);
-    printf("%s \n", commande);fflush(stdout);
-    system(commande);
-    
+        if (upload_fast) {
+            sprintf(commande, "bash %s/SCRIPTS/%s_script_fast.sh", datadir, basename);
+            printf("%s \n", commande);fflush(stdout);
+            system(commande);   
+        }
+        else{
+            sprintf(commande, "/data/script_pool/%s_script.sh", basename);
+            rename(script, commande);
+            printf("%s move in %s\n", script, commande);fflush(stdout);
+            remove(script_slow);
+            remove(script_fast);
+        } 
     }
-
-    sprintf(commande, "sudo rm -r %s 2>&1", logdir);
-    printf("%s \n", commande);fflush(stdout);
-    system(commande);
-	
-    sprintf(commande, "sudo mv `ls %s/PARSET-at-*.parset | grep -v %s` %s/OLD_parset/ 2>&1", datadir, obs_time, datadir);
-    printf("%s \n", commande);fflush(stdout);
-    system(commande);
-
-    sprintf(commande, "sudo mv `ls %s/PSETUP-at-*.log | grep -v %s` %s/OLD_LOG/ 2>&1", datadir, obs_time, datadir);
-    printf("%s \n", commande);fflush(stdout);
-    system(commande);
-
-
-
 }

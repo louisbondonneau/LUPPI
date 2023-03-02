@@ -61,7 +61,14 @@ int udp_init(udp_params *p) {
     struct sockaddr_in local_ip;
     local_ip.sin_family=AF_INET;
     local_ip.sin_port=htons(p->port);
-    local_ip.sin_addr.s_addr = inet_addr(p->rcv_ip);
+    //local_ip.sin_addr.s_addr = inet_addr(p->rcv_ip);
+    //if (strncmp(p->dst_ip,"224.",4) == 0){
+    local_ip.sin_addr.s_addr = inet_addr(p->dst_ip); //test it in unicast too
+    //}
+    //else {
+    //    local_ip.sin_addr.s_addr = inet_addr(p->rcv_ip);
+    //}
+    
     //local_ip.sin_addr.s_addr=INADDR_ANY;
     //local_ip.sin_addr.s_addr = inet_addr(LOCAL_IP1);
     int rv = bind(p->sock, (struct sockaddr *)&local_ip, sizeof(local_ip));
