@@ -199,11 +199,8 @@ int main(int argc, char *argv[]) {
         //sprintf(string,"if [ \"$1\" !=  \"\" ] && [ \"$1\" !=  \"rsync\" ]; then echo 'error: '$1' is not a valide option (rsync or empty is valide)' ; exit; fi\n"); fputs(string,pfo_fast);
         if (source_split != NULL) {
             sprintf(string,"ssh nfrplsobs@databfnfrdt 'mkdir /data/nenufar-pulsar/DATA/%s' 2>&1\n",source_dir); fputs(string,pfo_slow); fputs(string,pfo_fast);
-            sprintf(string,"ssh nfrplsobs@databfnfrdt 'mkdir /data/nenufar-pulsar/DATA/%s/%s' 2>&1\n",source_dir, source); fputs(string,pfo_slow); fputs(string,pfo_fast);
         }
-        else {
-            sprintf(string,"ssh nfrplsobs@databfnfrdt 'mkdir /data/nenufar-pulsar/DATA/%s' 2>&1\n",source); fputs(string,pfo_slow); fputs(string,pfo_fast);
-        }
+        sprintf(string,"ssh nfrplsobs@databfnfrdt 'mkdir /data/nenufar-pulsar/DATA/%s' 2>&1\n",source); fputs(string,pfo_slow); fputs(string,pfo_fast);
         sprintf(strlog, "script_mkdir directory %s/DATA/%s on data", datadir,source);
         log_info("nuppi_daq_dedisp", strlog);
         //######## mkdir DATA/SOURCE/MODE
