@@ -95,11 +95,14 @@ def dm_from_parfile(parfile):
     pf = open(parfile, 'r')
     for line in pf:
         fields = line.split()
-        key = fields[0]
-        val = fields[1]
-        if key == 'DM':
-            pf.close()
-            return float(val)
+        try:
+            key = fields[0]
+            val = fields[1]
+            if key == 'DM':
+                pf.close()
+                return float(val)
+        except IndexError:
+            pass
     pf.close()
     return 0.0
     
@@ -112,11 +115,14 @@ def rm_from_parfile(parfile):
     pf = open(parfile, 'r')
     for line in pf:
         fields = line.split()
-        key = fields[0]
-        val = fields[1]
-        if key == 'RM':
-            pf.close()
-            return float(val)
+        try:
+            key = fields[0]
+            val = fields[1]
+            if key == 'RM':
+                pf.close()
+                return float(val)
+        except IndexError:
+            pass
     pf.close()
     return 0.0
 
