@@ -38,10 +38,10 @@ void usage() {
             "Options:\n"
             "  -h, --help        This message\n"
             "  -n, --null        No disk output\n"
-        "  -D, --ds              Downsample instead of fold\n"
-        "  -t, --test            Test mode without ssh upload\n"
-        "  -f, --fasttransfer    transfer the observation using a mix of scp and rsync for max speed\n"
-        "  -g, --gpu             GPUid (default 0)\n"
+            "  -D, --ds              Downsample instead of fold\n"
+            "  -t, --test            Test mode without ssh upload\n"
+            "  -f, --fasttransfer    transfer the observation using a mix of scp and rsync for max speed\n"
+            "  -g, --gpu             GPUid (default 0)\n"
            );
 }
 
@@ -62,9 +62,9 @@ int main(int argc, char *argv[]) {
     static struct option long_opts[] = {
         {"help",   0, NULL, 'h'},
         {"null",   0, NULL, 'n'},
-    {"ds",     0, NULL, 'D'},
-    {"gpu",     0, NULL, 'g'},
-    {"databfdirname", 1, NULL, 'j'},
+        {"ds",     1, NULL, 'D'},
+        {"gpu",    1, NULL, 'g'},
+        {"databfdirname", 1, NULL, 'j'},
         {0,0,0,0}
     };
     int use_null_thread = 0;
@@ -115,9 +115,11 @@ int main(int argc, char *argv[]) {
     printf("upload_fast = %d\n",upload_fast);
     printf("BEAM = %d\n",gpu);
     printf("gpu = %d\n",gpu%2 );
+    printf("databfdirname = %s\n",databfdirname );
     // -- Ids --
     printf("nuppi_dac_dedisp\n\n");
     log_info("nuppi_daq_dedisp", "nuppi_dac_dedisp start");
+    exit(0);
     thread_args net_args, dedisp_args, disk_args;
     thread_args net_args_2, dedisp_args_2, disk_args_2;
     thread_args_init(&net_args);
