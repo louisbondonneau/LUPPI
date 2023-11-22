@@ -42,7 +42,7 @@ void usage() {
             "  -t, --test            Test mode without ssh upload\n"
             "  -f, --fasttransfer    transfer the observation using a mix of scp and rsync for max speed\n"
             "  -g, --gpu             GPUid (default 0)\n"
-            "  -j, --databfdirname   optional subdirectory on databf\n"
+            "  -j, --databfdirname   Subdirectory on databf (optional)\n"
            );
 }
 
@@ -56,7 +56,7 @@ void *null_thread(void *args);
 char datadir[256];
 char basename[256];
 char script[128], script_fast[128], script_slow[128];
-char databfdirname[256];
+char databfdirname[256] = "";
 
 int main(int argc, char *argv[]) {
 
@@ -64,8 +64,8 @@ int main(int argc, char *argv[]) {
         {"help",   0, NULL, 'h'},
         {"null",   0, NULL, 'n'},
         {"ds",     0, NULL, 'D'},
-        {"gpu",    0, NULL, 'g'},
-        {"databfdirname", 0, NULL, 'j'},
+        {"gpu",    1, NULL, 'g'},
+        {"databfdirname", 1, NULL, 'j'},
         {0,0,0,0}
     };
     int use_null_thread = 0;
@@ -76,18 +76,7 @@ int main(int argc, char *argv[]) {
     int opt, opti;
 
 
-    int i=1;
-    while(i<argc) {
-      if(strncmp(argv[i],"-g",2) == 0) { i++; sscanf(argv[i],"%d",&gpu); }
-      if(strncmp(argv[i],"--gpu",2) == 0) { i++; sscanf(argv[i],"%d",&gpu); }
-
-      if(strncmp(argv[i],"-j",2) == 0) { i++; sscanf(argv[i],"%s",databfdirname); }
-      if(strncmp(argv[i],"--databfdirname",2) == 0) { i++; sscanf(argv[i],"%s",databfdirname); }
-      i++;
-    }
-
-
-    while ((opt=getopt_long(argc,argv,"htfnDgj",long_opts,&opti))!=-1) {
+    while ((opt = getopt_long(argc, argv, "htfnDg:j:", long_opts, &opti)) != -1) {
         switch (opt) {
             case 'n':
                 use_null_thread = 1;
@@ -102,16 +91,51 @@ int main(int argc, char *argv[]) {
                 upload_fast = 1;
                 break;
             case 'g':
+                gpu = atoi(optarg);
                 break;
             case 'j':
+                strncpy(databfdirname, optarg, sizeof(databfdirname) - 1);
                 break;
-            default:
             case 'h':
+            default:
                 usage();
                 exit(0);
-                break;
         }
     }
+
+    // int i=1;
+    // while(i<argc) {
+    //   if(strncmp(argv[i],"-g",2) == 0) { i++; sscanf(argv[i],"%d",&gpu); }
+    //   if(strncmp(argv[i],"--gpu",2) == 0) { i++; sscanf(argv[i],"%d",&gpu); }
+    //   if(strncmp(argv[i],"-j",2) == 0) { i++; sscanf(argv[i],"%s",databfdirname); }
+    //   if(strncmp(argv[i],"--databfdirname",2) == 0) { i++; sscanf(argv[i],"%s",databfdirname); }
+    //   i++;
+    // }
+    // while ((opt=getopt_long(argc,argv,"htfnDgj",long_opts,&opti))!=-1) {
+    //     switch (opt) {
+    //         case 'n':
+    //             use_null_thread = 1;
+    //             break;
+    //         case 'D':
+    //             ds = 1;
+    //             break;
+    //         case 't':
+    //             upload = 0;
+    //             break;
+    //         case 'f':
+    //             upload_fast = 1;
+    //             break;
+    //         case 'g':
+    //             break;
+    //         case 'j':
+    //             break;
+    //         default:
+    //         case 'h':
+    //             usage();
+    //             exit(0);
+    //             break;
+    //     }
+    // }
 
     printf("upload = %d\n",upload);
     printf("upload_fast = %d\n",upload_fast);
