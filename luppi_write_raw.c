@@ -238,12 +238,13 @@ int main(int argc, char *argv[]) {
             sprintf(string, "echo \"$(%s) $USER %s Start\" >> /data/upload_file.log\n", date, script_slow); fputs(string,pfo_slow);
             sprintf(string, "echo \"$(%s) $USER %s Start\" >> /data/upload_file.log\n", date, script_fast); fputs(string,pfo_fast);
             if (databfdirname[0] != '\0') {
-                sprintf(string, "rsync -avt --chmod=o+r,o-wx --remove-source-files --progress -e \"ssh -T -c aes128-ctr -o Compression=no\"  %s/%s*  nfrplsobs@databfnfrdt:/data/nenufar-pulsar/%.4s/%.4s/%.2s/%s/L0/\n", path, basename, projid, year, month, databfdirname); fputs(string,pfo_fast);
+                sprintf(string, "rsync -avt --chmod=o+r,o-wx --remove-source-files --progress --bwlimit=50000 -e \"ssh -T -c aes128-ctr -o Compression=no\"  %s/%s*  nfrplsobs@databfnfrdt:/data/nenufar-pulsar/%.4s/%.4s/%.2s/%s/L0/\n", path, basename, projid, year, month, databfdirname); fputs(string,pfo_slow);
+                sprintf(string, "scp -p -o Compression=no -c aes128-ctr %s/%s*  nfrplsobs@databfnfrdt:/data/nenufar-pulsar/%.4s/%.4s/%.2s/%s/L0/\n", path, basename, projid, year, month, databfdirname); fputs(string,pfo_fast);
             } else {
-                sprintf(string, "rsync -avt --chmod=o+r,o-wx --remove-source-files --progress -e \"ssh -T -c aes128-ctr -o Compression=no\"  %s/%s*  nfrplsobs@databfnfrdt:/data/nenufar-pulsar/%.4s/%.4s/%.2s/\n", path, basename, projid, year, month); fputs(string,pfo_fast);
-            }
                 sprintf(string, "rsync -avt --chmod=o+r,o-wx --remove-source-files --progress --bwlimit=50000 -e \"ssh -T -c aes128-ctr -o Compression=no\"  %s/%s*  nfrplsobs@databfnfrdt:/data/nenufar-pulsar/%.4s/%.4s/%.2s/\n", path, basename, projid, year, month); fputs(string,pfo_slow);
                 sprintf(string, "scp -p -o Compression=no -c aes128-ctr %s/%s*  nfrplsobs@databfnfrdt:/data/nenufar-pulsar/%.4s/%.4s/%.2s/\n", path, basename, projid, year, month); fputs(string,pfo_fast);
+            }
+
             if (databfdirname[0] != '\0') {
                 sprintf(string, "rsync -avt --chmod=o+r,o-wx --remove-source-files --progress -e \"ssh -T -c aes128-ctr -o Compression=no\"  %s/%s*  nfrplsobs@databfnfrdt:/data/nenufar-pulsar/%.4s/%.4s/%.2s/%s/L0/\n", path, basename, projid, year, month, databfdirname); fputs(string,pfo_fast);
             } else {
