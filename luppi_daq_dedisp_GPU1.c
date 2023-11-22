@@ -81,8 +81,8 @@ int main(int argc, char *argv[]) {
       if(strncmp(argv[i],"-g",2) == 0) { i++; sscanf(argv[i],"%d",&gpu); }
       if(strncmp(argv[i],"--gpu",2) == 0) { i++; sscanf(argv[i],"%d",&gpu); }
 
-      if(strncmp(argv[i],"-j",2) == 0) { i++; sscanf(argv[i],"%s",&databfdirname); }
-      if(strncmp(argv[i],"--databfdirname",2) == 0) { i++; sscanf(argv[i],"%s",&databfdirname); }
+      if(strncmp(argv[i],"-j",2) == 0) { i++; sscanf(argv[i],"%s",databfdirname); }
+      if(strncmp(argv[i],"--databfdirname",2) == 0) { i++; sscanf(argv[i],"%s",databfdirname); }
       i++;
     }
 
