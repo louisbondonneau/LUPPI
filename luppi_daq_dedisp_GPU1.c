@@ -42,6 +42,7 @@ void usage() {
             "  -t, --test            Test mode without ssh upload\n"
             "  -f, --fasttransfer    transfer the observation using a mix of scp and rsync for max speed\n"
             "  -g, --gpu             GPUid (default 0)\n"
+            "  -j, --databfdirname   optional subdirectory on databf\n"
            );
 }
 
