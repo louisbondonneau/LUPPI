@@ -112,7 +112,6 @@ int main(int argc, char *argv[]) {
     printf("BEAM = %d\n",gpu);
     printf("gpu = %d\n",gpu%2 );
     printf("databfdirname = %s\n",databfdirname );
-    exit(0);
     // -- First part of the band --
     thread_args net_args;
     thread_args null_args;
@@ -200,6 +199,10 @@ int main(int argc, char *argv[]) {
             sprintf(string,"mkdir %s 2>&1\n",path); fputs(string,pfo_slow); fputs(string,pfo_fast);
             sprintf(string,"chmod a+rw %s\n",path); fputs(string,pfo_slow); fputs(string,pfo_fast);
             sprintf(string,"ssh nfrplsobs@databfnfrdt 'mkdir /data/nenufar-pulsar/%.4s/%.4s/%.2s' 2>&1\n",projid, year, month); fputs(string,pfo_slow); fputs(string,pfo_fast);
+            if (databfdirname[0] != '\0') {
+                sprintf(string,"ssh nfrplsobs@databfnfrdt 'mkdir -p /data/nenufar-pulsar/%.4s/%.4s/%.2s/%s/L0' 2>&1\n",projid, year, month, databfdirname); fputs(string,pfo_slow); fputs(string,pfo_fast);
+
+            }
             sprintf(strlog, "script_mkdir directory %s on %s and data", path, hostname);
             log_info("nuppi_daq_dedisp", strlog);
             //######## mkdir log_dir
@@ -234,9 +237,18 @@ int main(int argc, char *argv[]) {
     
             sprintf(string, "echo \"$(%s) $USER %s Start\" >> /data/upload_file.log\n", date, script_slow); fputs(string,pfo_slow);
             sprintf(string, "echo \"$(%s) $USER %s Start\" >> /data/upload_file.log\n", date, script_fast); fputs(string,pfo_fast);
-            sprintf(string, "rsync -avt --chmod=o+r,o-wx --remove-source-files --progress --bwlimit=50000 -e \"ssh -T -c aes128-ctr -o Compression=no\"  %s/%s*  nfrplsobs@databfnfrdt:/data/nenufar-pulsar/%.4s/%.4s/%.2s/\n", path, basename, projid, year, month); fputs(string,pfo_slow);
-            sprintf(string, "scp -p -o Compression=no -c aes128-ctr %s/%s*  nfrplsobs@databfnfrdt:/data/nenufar-pulsar/%.4s/%.4s/%.2s/\n", path, basename, projid, year, month); fputs(string,pfo_fast);
-            sprintf(string, "rsync -avt --chmod=o+r,o-wx --remove-source-files --progress -e \"ssh -T -c aes128-ctr -o Compression=no\"  %s/%s*  nfrplsobs@databfnfrdt:/data/nenufar-pulsar/%.4s/%.4s/%.2s/\n", path, basename, projid, year, month); fputs(string,pfo_fast);
+            if (databfdirname[0] != '\0') {
+                sprintf(string, "rsync -avt --chmod=o+r,o-wx --remove-source-files --progress -e \"ssh -T -c aes128-ctr -o Compression=no\"  %s/%s*  nfrplsobs@databfnfrdt:/data/nenufar-pulsar/%.4s/%.4s/%.2s/%s/L0/\n", path, basename, projid, year, month, databfdirname); fputs(string,pfo_fast);
+            } else {
+                sprintf(string, "rsync -avt --chmod=o+r,o-wx --remove-source-files --progress -e \"ssh -T -c aes128-ctr -o Compression=no\"  %s/%s*  nfrplsobs@databfnfrdt:/data/nenufar-pulsar/%.4s/%.4s/%.2s/\n", path, basename, projid, year, month); fputs(string,pfo_fast);
+            }
+                sprintf(string, "rsync -avt --chmod=o+r,o-wx --remove-source-files --progress --bwlimit=50000 -e \"ssh -T -c aes128-ctr -o Compression=no\"  %s/%s*  nfrplsobs@databfnfrdt:/data/nenufar-pulsar/%.4s/%.4s/%.2s/\n", path, basename, projid, year, month); fputs(string,pfo_slow);
+                sprintf(string, "scp -p -o Compression=no -c aes128-ctr %s/%s*  nfrplsobs@databfnfrdt:/data/nenufar-pulsar/%.4s/%.4s/%.2s/\n", path, basename, projid, year, month); fputs(string,pfo_fast);
+            if (databfdirname[0] != '\0') {
+                sprintf(string, "rsync -avt --chmod=o+r,o-wx --remove-source-files --progress -e \"ssh -T -c aes128-ctr -o Compression=no\"  %s/%s*  nfrplsobs@databfnfrdt:/data/nenufar-pulsar/%.4s/%.4s/%.2s/%s/L0/\n", path, basename, projid, year, month, databfdirname); fputs(string,pfo_fast);
+            } else {
+                sprintf(string, "rsync -avt --chmod=o+r,o-wx --remove-source-files --progress -e \"ssh -T -c aes128-ctr -o Compression=no\"  %s/%s*  nfrplsobs@databfnfrdt:/data/nenufar-pulsar/%.4s/%.4s/%.2s/\n", path, basename, projid, year, month); fputs(string,pfo_fast);
+            }
             sprintf(string, "echo \"$(%s) $USER %s Stop\" >> /data/upload_file.log\n", date, script_slow); fputs(string,pfo_slow);
             sprintf(string, "echo \"$(%s) $USER %s Stop\" >> /data/upload_file.log\n", date, script_fast); fputs(string,pfo_fast);
             //######## creating link on databf2 in /databf2/nenufar-pulsar/DATA/
