@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
                 upload_fast = 1;
                 break;
             case 'g':
-                break;...
+                break;
             case 'j':
                 strncpy(databfdirname, optarg, sizeof(databfdirname) - 1);
                 databfdirname[sizeof(databfdirname) - 1] = '\0'; // Assurer la null-termination
