@@ -63,9 +63,9 @@ int main(int argc, char *argv[]) {
     static struct option long_opts[] = {
         {"help",   0, NULL, 'h'},
         {"null",   0, NULL, 'n'},
-        {"ds",     1, NULL, 'D'},
-        {"gpu",    1, NULL, 'g'},
-        {"databfdirname", 1, NULL, 'j'},
+        {"ds",     0, NULL, 'D'},
+        {"gpu",    0, NULL, 'g'},
+        {"databfdirname", 0, NULL, 'j'},
         {0,0,0,0}
     };
     int use_null_thread = 0;
@@ -80,6 +80,9 @@ int main(int argc, char *argv[]) {
     while(i<argc) {
       if(strncmp(argv[i],"-g",2) == 0) { i++; sscanf(argv[i],"%d",&gpu); }
       if(strncmp(argv[i],"--gpu",2) == 0) { i++; sscanf(argv[i],"%d",&gpu); }
+
+      if(strncmp(argv[i],"-j",2) == 0) { i++; sscanf(argv[i],"%d",&databfdirname); }
+      if(strncmp(argv[i],"--databfdirname",2) == 0) { i++; sscanf(argv[i],"%d",&databfdirname); }
       i++;
     }
 
@@ -101,11 +104,6 @@ int main(int argc, char *argv[]) {
             case 'g':
                 break;
             case 'j':
-                printf("ICCCII\n");fflush(stdout);
-                printf("optarg : %s\n", optarg);
-                strncpy(databfdirname, optarg, sizeof(databfdirname) - 1);
-                databfdirname[sizeof(databfdirname) - 1] = '\0'; // Assurer la null-termination
-                printf("LAAAAAA\n");fflush(stdout);
                 break;
             default:
             case 'h':
