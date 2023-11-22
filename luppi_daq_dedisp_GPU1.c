@@ -56,7 +56,7 @@ void *null_thread(void *args);
 char datadir[256];
 char basename[256];
 char script[128], script_fast[128], script_slow[128];
-char databfdirname[256] = {0};
+char databfdirname[256];
 
 int main(int argc, char *argv[]) {
 
