@@ -103,40 +103,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // int i=1;
-    // while(i<argc) {
-    //   if(strncmp(argv[i],"-g",2) == 0) { i++; sscanf(argv[i],"%d",&gpu); }
-    //   if(strncmp(argv[i],"--gpu",2) == 0) { i++; sscanf(argv[i],"%d",&gpu); }
-    //   if(strncmp(argv[i],"-j",2) == 0) { i++; sscanf(argv[i],"%s",databfdirname); }
-    //   if(strncmp(argv[i],"--databfdirname",2) == 0) { i++; sscanf(argv[i],"%s",databfdirname); }
-    //   i++;
-    // }
-    // while ((opt=getopt_long(argc,argv,"htfnDgj",long_opts,&opti))!=-1) {
-    //     switch (opt) {
-    //         case 'n':
-    //             use_null_thread = 1;
-    //             break;
-    //         case 'D':
-    //             ds = 1;
-    //             break;
-    //         case 't':
-    //             upload = 0;
-    //             break;
-    //         case 'f':
-    //             upload_fast = 1;
-    //             break;
-    //         case 'g':
-    //             break;
-    //         case 'j':
-    //             break;
-    //         default:
-    //         case 'h':
-    //             usage();
-    //             exit(0);
-    //             break;
-    //     }
-    // }
-
     printf("upload = %d\n",upload);
     printf("upload_fast = %d\n",upload_fast);
     printf("BEAM = %d\n",gpu);
@@ -145,7 +111,7 @@ int main(int argc, char *argv[]) {
     // -- Ids --
     printf("nuppi_dac_dedisp\n\n");
     log_info("nuppi_daq_dedisp", "nuppi_dac_dedisp start");
-    exit(0);
+
     thread_args net_args, dedisp_args, disk_args;
     thread_args net_args_2, dedisp_args_2, disk_args_2;
     thread_args_init(&net_args);
