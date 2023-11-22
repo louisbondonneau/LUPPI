@@ -101,8 +101,10 @@ int main(int argc, char *argv[]) {
             case 'g':
                 break;
             case 'j':
+                printf("ICCCII\n");fflush(stdout);
                 strncpy(databfdirname, optarg, sizeof(databfdirname) - 1);
                 databfdirname[sizeof(databfdirname) - 1] = '\0'; // Assurer la null-termination
+                printf("LAAAAAA\n");fflush(stdout);
                 break;
             default:
             case 'h':
