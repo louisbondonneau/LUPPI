@@ -165,7 +165,6 @@ int main(int argc, char *argv[]) {
         if((pfo_fast=fopen(script_fast,"w"))!=NULL) {
             //######## mkdir DATA/SOURCE
             //sprintf(string,"mkdir %s/DATA/%s 2>&1\n",datadir,source); fputs(string,pfo_slow); fputs(string,pfo_fast);
-            sprintf(string,"if [ \"$1\" !=  \"\" ] && [ \"$1\" !=  \"rsync\" ]; then echo 'error: '$1' is not a valide option (rsync or empty is valide)'; exit ; fi\n"); fputs(string,pfo_fast);
             sprintf(string,"ssh nfrplsobs@databfnfrdt 'mkdir /data/nenufar-pulsar/DATA/%s' 2>&1\n",source); fputs(string,pfo_slow); fputs(string,pfo_fast);
             sprintf(strlog, "script_mkdir directory %s/DATA/%s on data", datadir,source);
             log_info("nuppi_daq_dedisp", strlog);
@@ -235,9 +234,9 @@ int main(int argc, char *argv[]) {
             sprintf(string, "ssh nfrplsobs@databfnfrdt 'ln /data/nenufar-pulsar/%.4s/%.4s/%.2s/%s* /data/nenufar-pulsar/DATA/%s/%s/' 2>&1\n", projid, year, month, basename, source, mode); fputs(string,pfo_slow); fputs(string,pfo_fast);
             //######## cleaning log files and dir
             sprintf(string, "rm -r %s 2>&1\n", logdir); fputs(string,pfo_slow); fputs(string,pfo_fast);
-            sprintf(string, "mv `ls %s/PARSET-at-*.parset | grep -v %s` %s/OLD_parset/ 2>&1\n", datadir, obs_time, datadir); fputs(string,pfo_slow); fputs(string,pfo_fast);
-            sprintf(string, "mv `ls %s/PSETUP-at-*.log | grep -v %s` %s/OLD_LOG/ 2>&1\n", datadir, obs_time, datadir); fputs(string,pfo_slow); fputs(string,pfo_fast);
-            sprintf(string, "mv `ls %s/SHELL--at-*.log | grep -v %s` %s/OLD_LOG/ 2>&1\n", datadir, obs_time, datadir); fputs(string,pfo_slow); fputs(string,pfo_fast);
+            // sprintf(string, "mv `ls %s/PARSET-at-*.parset | grep -v %s` %s/OLD_parset/ 2>&1\n", datadir, obs_time, datadir); fputs(string,pfo_slow); fputs(string,pfo_fast);
+            // sprintf(string, "mv `ls %s/PSETUP-at-*.log | grep -v %s` %s/OLD_LOG/ 2>&1\n", datadir, obs_time, datadir); fputs(string,pfo_slow); fputs(string,pfo_fast);
+            // sprintf(string, "mv `ls %s/SHELL--at-*.log | grep -v %s` %s/OLD_LOG/ 2>&1\n", datadir, obs_time, datadir); fputs(string,pfo_slow); fputs(string,pfo_fast);
         }}
         fclose(pfo_slow);
         fclose(pfo_fast);
