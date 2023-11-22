@@ -22,7 +22,8 @@ int read_one_pc(FILE *f,  polyco *pc, const char *psr) {
     /* Read in polyco chunk */
     rv = fgets(buf, 90, f);
     if (rv==NULL) { return(-1); }
-    strncpy(pc->psr, &buf[0], 10);  pc->psr[10] = '\0';
+    strncpy(pc->psr, &buf[0], 10);
+    pc->psr[10] = '\0';  // LOUIS (increased from 10 to 15) limited by "char psr[15]" in polyo_struct.h 
 
     pc->mjd = atoi(&buf[31]);
     pc->fmjd = atof(&buf[39]);
@@ -32,7 +33,7 @@ int read_one_pc(FILE *f,  polyco *pc, const char *psr) {
 
     // -- check for correct psr - null psrname matches any --
     if (psr!=NULL) {
-        if (strcmp(pc->psr, psr)!=0) {
+        if (strncmp(pc->psr, psr, 10)!=0) {
 	    sprintf(strlog, "Can not find '%s' in polyco file. Found src '%s'", psr, pc->psr);
 	    log_error("read_one_pc", strlog); 
 	    exit(1);
