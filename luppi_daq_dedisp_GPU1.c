@@ -218,7 +218,7 @@ int main(int argc, char *argv[]) {
         sprintf(string,"chmod a+rw %s\n",path); fputs(string,pfo_slow); fputs(string,pfo_fast);
         sprintf(string,"ssh nfrplsobs@databfnfrdt 'mkdir /data/nenufar-pulsar/%.4s/%.4s/%.2s' 2>&1\n",projid, year, month); fputs(string,pfo_slow); fputs(string,pfo_fast);
         if (databfdirname[0] != '\0') {
-            sprintf(string,"ssh nfrplsobs@databfnfrdt 'mkdir /data/nenufar-pulsar/%.4s/%.4s/%.2s/%s' 2>&1\n",projid, year, month, databfdirname); fputs(string,pfo_slow); fputs(string,pfo_fast);
+            sprintf(string,"ssh nfrplsobs@databfnfrdt 'mkdir -p /data/nenufar-pulsar/%.4s/%.4s/%.2s/%s/L0' 2>&1\n",projid, year, month, databfdirname); fputs(string,pfo_slow); fputs(string,pfo_fast);
         }
         sprintf(strlog, "script_mkdir directory %s on %s and data", path, hostname);
         log_info("nuppi_daq_dedisp", strlog);
@@ -261,7 +261,7 @@ int main(int argc, char *argv[]) {
         sprintf(string, "echo \"$(%s) $USER %s Stop\" >> /data/upload_file.log\n", date, script_fast); fputs(string,pfo_fast);
         //######## creating link on databf2 in /databf2/nenufar-pulsar/DATA/
         if (databfdirname[0] != '\0') {
-            sprintf(string, "ssh nfrplsobs@databfnfrdt 'ln /data/nenufar-pulsar/%.4s/%.4s/%.2s/%s/%s* /data/nenufar-pulsar/DATA/%s/%s/' 2>&1\n", projid, year, month, databfdirname, basename, source, mode); fputs(string,pfo_slow); fputs(string,pfo_fast);
+            sprintf(string, "ssh nfrplsobs@databfnfrdt 'ln /data/nenufar-pulsar/%.4s/%.4s/%.2s/%s/L0/%s* /data/nenufar-pulsar/DATA/%s/%s/' 2>&1\n", projid, year, month, databfdirname, basename, source, mode); fputs(string,pfo_slow); fputs(string,pfo_fast);
         } else {
             sprintf(string, "ssh nfrplsobs@databfnfrdt 'ln /data/nenufar-pulsar/%.4s/%.4s/%.2s/%s* /data/nenufar-pulsar/DATA/%s/%s/' 2>&1\n", projid, year, month, basename, source, mode); fputs(string,pfo_slow); fputs(string,pfo_fast);
 
