@@ -111,6 +111,8 @@ int main(int argc, char *argv[]) {
     printf("disk = %d\n",disk);
     printf("BEAM = %d\n",gpu);
     printf("gpu = %d\n",gpu%2 );
+    printf("databfdirname = %s\n",databfdirname );
+    exit(0);
     // -- First part of the band --
     thread_args net_args;
     thread_args null_args;
