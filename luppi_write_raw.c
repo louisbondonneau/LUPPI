@@ -37,6 +37,8 @@ void usage() {
             "  -t, --test        Test mode without ssh upload\n"
             "  -f, --fasttransfer    transfer the observation using a mix of scp and rsync for max speed\n"
             "  -g, --gpu         GPUid (default 0)\n"
+            "  -j, --databfdirname   Subdirectory on databf (optional)\n"
+
            );
 }
 
@@ -52,7 +54,8 @@ int main(int argc, char *argv[]) {
         {"disk",    0, NULL, 'd'},
         {"only_net",0, NULL, 'o'},
         {"bands",   0, NULL, 'b'},
-        {"gpu",     0, NULL, 'g'},
+        {"gpu",     1, NULL, 'g'},
+        {"databfdirname", 1, NULL, 'j'},
         {0,0,0,0}
     };
     int opt, opti;
@@ -61,21 +64,25 @@ int main(int argc, char *argv[]) {
     int upload = 1;
     int upload_fast = 0;
     char basename[256], datadir[256];
-    
-    
-    int i=1;
-    while(i<argc) {
-      if(strncmp(argv[i],"-g",2) == 0) { i++; sscanf(argv[i],"%d",&gpu); }
-      if(strncmp(argv[i],"--gpu",2) == 0) { i++; sscanf(argv[i],"%d",&gpu); }
-      i++;
-    }
+    char databfdirname[256] = "";
 
     
     
+    // int i=1;
+    // while(i<argc) {
+    //   if(strncmp(argv[i],"-g",2) == 0) { i++; sscanf(argv[i],"%d",&gpu); }
+    //   if(strncmp(argv[i],"--gpu",2) == 0) { i++; sscanf(argv[i],"%d",&gpu); }
+    //   i++;
+    // }
+
     
-    while ((opt=getopt_long(argc,argv,"hdtfobg:",long_opts,&opti))!=-1) {
+    while ((opt = getopt_long(argc,argv,"hdtfobg:j:", long_opts, &opti)) != -1) {
         switch (opt) {
             case 'g':
+                gpu = atoi(optarg);
+                break;
+            case 'j':
+                strncpy(databfdirname, optarg, sizeof(databfdirname) - 1);
                 break;
             case 't':
                 upload=0;
